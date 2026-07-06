@@ -52,6 +52,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", s.handleHealth)
 	mux.HandleFunc("GET /notes", s.handleListNotes)
+	mux.HandleFunc("GET /notes/count", s.handleCountNotes)
 	mux.HandleFunc("GET /notes/{id}", s.handleGetNote)
 	mux.HandleFunc("POST /notes", s.handleCreateNote)
 
@@ -136,6 +137,16 @@ func (s *server) handleListNotes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, notes)
+}
+
+func (s *server) handleCountNotes(w http.ResponseWriter, r *http.Request) {
+	var count int
+	if err := s.db.QueryRow(r.Context(), "SELECT count(*) FROM notes").Scan(&count); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to count notes"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]int{"count": count})
 }
 
 func (s *server) handleGetNote(w http.ResponseWriter, r *http.Request) {
