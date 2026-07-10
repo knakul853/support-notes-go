@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -52,6 +53,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", s.handleHealth)
 	mux.HandleFunc("GET /notes", s.handleListNotes)
+	mux.HandleFunc("GET /notes/search", s.handleSearchNotes)
 	mux.HandleFunc("GET /notes/{id}", s.handleGetNote)
 	mux.HandleFunc("POST /notes", s.handleCreateNote)
 
@@ -117,6 +119,33 @@ func (s *server) handleListNotes(w http.ResponseWriter, r *http.Request) {
 	rows, err := s.db.Query(r.Context(), "SELECT id, owner, body FROM notes ORDER BY id")
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to list notes"})
+		return
+	}
+	defer rows.Close()
+
+	notes := []Note{}
+	for rows.Next() {
+		var n Note
+		if err := rows.Scan(&n.ID, &n.Owner, &n.Body); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to scan note"})
+			return
+		}
+		notes = append(notes, n)
+	}
+	if err := rows.Err(); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to read notes"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, notes)
+}
+
+func (s *server) handleSearchNotes(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	query := fmt.Sprintf("SELECT id, owner, body FROM notes WHERE body LIKE '%%%s%%' ORDER BY id", q)
+	rows, err := s.db.Query(r.Context(), query)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to search notes"})
 		return
 	}
 	defer rows.Close()
