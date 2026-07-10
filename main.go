@@ -18,6 +18,8 @@ type Note struct {
 	ID    int    `json:"id"`
 	Owner string `json:"owner"`
 	Body  string `json:"body"`
+	// Pinned is set only by staff moderation, never by the client.
+	Pinned bool `json:"pinned"`
 }
 
 type server struct {
@@ -86,7 +88,8 @@ func initSchema(ctx context.Context, pool *pgxpool.Pool) error {
 		CREATE TABLE IF NOT EXISTS notes (
 			id serial primary key,
 			owner text not null,
-			body text not null
+			body text not null,
+			pinned boolean not null default false
 		)
 	`)
 	if err != nil {
@@ -114,7 +117,7 @@ func (s *server) handleHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handleListNotes(w http.ResponseWriter, r *http.Request) {
-	rows, err := s.db.Query(r.Context(), "SELECT id, owner, body FROM notes ORDER BY id")
+	rows, err := s.db.Query(r.Context(), "SELECT id, owner, body, pinned FROM notes ORDER BY id")
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to list notes"})
 		return
@@ -124,7 +127,7 @@ func (s *server) handleListNotes(w http.ResponseWriter, r *http.Request) {
 	notes := []Note{}
 	for rows.Next() {
 		var n Note
-		if err := rows.Scan(&n.ID, &n.Owner, &n.Body); err != nil {
+		if err := rows.Scan(&n.ID, &n.Owner, &n.Body, &n.Pinned); err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to scan note"})
 			return
 		}
@@ -146,7 +149,7 @@ func (s *server) handleGetNote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var n Note
-	err = s.db.QueryRow(r.Context(), "SELECT id, owner, body FROM notes WHERE id = $1", id).Scan(&n.ID, &n.Owner, &n.Body)
+	err = s.db.QueryRow(r.Context(), "SELECT id, owner, body, pinned FROM notes WHERE id = $1", id).Scan(&n.ID, &n.Owner, &n.Body, &n.Pinned)
 	if errors.Is(err, pgx.ErrNoRows) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "note not found"})
 		return
@@ -178,9 +181,9 @@ func (s *server) handleCreateNote(w http.ResponseWriter, r *http.Request) {
 	var n Note
 	err := s.db.QueryRow(
 		r.Context(),
-		"INSERT INTO notes (owner, body) VALUES ($1, $2) RETURNING id, owner, body",
+		"INSERT INTO notes (owner, body) VALUES ($1, $2) RETURNING id, owner, body, pinned",
 		req.Owner, req.Body,
-	).Scan(&n.ID, &n.Owner, &n.Body)
+	).Scan(&n.ID, &n.Owner, &n.Body, &n.Pinned)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to create note"})
 		return
