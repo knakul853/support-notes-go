@@ -54,6 +54,7 @@ func main() {
 	mux.HandleFunc("GET /notes", s.handleListNotes)
 	mux.HandleFunc("GET /notes/{id}", s.handleGetNote)
 	mux.HandleFunc("POST /notes", s.handleCreateNote)
+	mux.HandleFunc("GET /redirect", s.handleRedirect)
 
 	log.Printf("listening on :%s", port)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
@@ -187,6 +188,16 @@ func (s *server) handleCreateNote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusCreated, n)
+}
+
+func (s *server) handleRedirect(w http.ResponseWriter, r *http.Request) {
+	target := r.URL.Query().Get("url")
+	if target == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "url is required"})
+		return
+	}
+
+	http.Redirect(w, r, target, http.StatusFound)
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
