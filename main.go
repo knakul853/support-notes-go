@@ -351,13 +351,8 @@ func (s *server) handleCreateNote(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handleAdminListNotes(w http.ResponseWriter, r *http.Request) {
-	user, err := s.authenticate(r)
-	if err != nil {
+	if _, err := s.authenticate(r); err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
-		return
-	}
-	if user.Role != "admin" {
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": "admin role required"})
 		return
 	}
 
