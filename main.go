@@ -163,8 +163,9 @@ func (s *server) handleGetNote(w http.ResponseWriter, r *http.Request) {
 }
 
 type createNoteRequest struct {
-	Owner string `json:"owner"`
-	Body  string `json:"body"`
+	Owner  string `json:"owner"`
+	Body   string `json:"body"`
+	Pinned bool   `json:"pinned"`
 }
 
 func (s *server) handleCreateNote(w http.ResponseWriter, r *http.Request) {
@@ -181,8 +182,8 @@ func (s *server) handleCreateNote(w http.ResponseWriter, r *http.Request) {
 	var n Note
 	err := s.db.QueryRow(
 		r.Context(),
-		"INSERT INTO notes (owner, body) VALUES ($1, $2) RETURNING id, owner, body, pinned",
-		req.Owner, req.Body,
+		"INSERT INTO notes (owner, body, pinned) VALUES ($1, $2, $3) RETURNING id, owner, body, pinned",
+		req.Owner, req.Body, req.Pinned,
 	).Scan(&n.ID, &n.Owner, &n.Body, &n.Pinned)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to create note"})
