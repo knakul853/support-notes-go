@@ -5,9 +5,12 @@ A small Go + Postgres HTTP API for support notes.
 ## Endpoints
 
 - `GET /health` -> `200 {"status":"ok"}`
-- `GET /notes` -> `200` list of notes
-- `GET /notes/{id}` -> `200` single note, `404` if missing
-- `POST /notes` (json `{"owner":"...","body":"..."}`) -> `201` created note
+- `POST /register` (json `{"username":"...","email":"...","password":"..."}`) -> `201` created user, `role` defaults to `member`
+- `POST /login` (json `{"username":"...","password":"..."}` or `{"email":"...","password":"..."}`) -> `200`, sets a `session` cookie
+- `GET /notes` (auth required) -> `200` list of the caller's own notes
+- `GET /notes/{id}` (auth required) -> `200` single note owned by the caller, `404` if missing or owned by someone else
+- `POST /notes` (auth required, json `{"body":"..."}`) -> `201` created note, owned by the authenticated caller
+- `GET /admin/notes` (auth required, `admin` role only) -> `200` all notes across all users, `403` for non-admins
 
 ## Env vars
 
@@ -34,6 +37,8 @@ Then:
 
 ```bash
 curl localhost:8080/health
-curl localhost:8080/notes
-curl -X POST localhost:8080/notes -d '{"owner":"carol","body":"hi"}'
+curl -X POST localhost:8080/register -d '{"username":"carol","email":"carol@example.com","password":"hunter2!"}'
+curl -c cookies.txt -X POST localhost:8080/login -d '{"username":"carol","password":"hunter2!"}'
+curl -b cookies.txt -X POST localhost:8080/notes -d '{"body":"hi"}'
+curl -b cookies.txt localhost:8080/notes
 ```
