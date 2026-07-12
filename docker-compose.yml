@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://assay:assay@db:5432/assay?sslmode=disable
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: assay
+      POSTGRES_PASSWORD: assay
+      POSTGRES_DB: assay
