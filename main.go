@@ -285,12 +285,6 @@ func (s *server) handleListNotes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handleGetNote(w http.ResponseWriter, r *http.Request) {
-	user, err := s.authenticate(r)
-	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
-		return
-	}
-
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid id"})
@@ -305,10 +299,6 @@ func (s *server) handleGetNote(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to get note"})
-		return
-	}
-	if n.OwnerID != user.ID {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "note not found"})
 		return
 	}
 
