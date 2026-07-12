@@ -148,7 +148,7 @@ func initSchema(ctx context.Context, pool *pgxpool.Pool) error {
 }
 
 func (s *server) handleHealth(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "service": "support-notes-go"})
 }
 
 type registerRequest struct {
