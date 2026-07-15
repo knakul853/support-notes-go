@@ -1,1 +1,1 @@
-prod verification of silent-skip fix (v0.7.1) — trigger auto-review commit-2
+positive control: neo-pr label present -> expect a review, not skip
