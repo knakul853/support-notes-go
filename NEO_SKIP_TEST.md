@@ -1,1 +1,1 @@
-positive control commit: neo-pr label now present -> expect a REVIEW
+positive control retry: neo-pr label settled -> expect REVIEW
