@@ -21,13 +21,21 @@ type Note struct {
 }
 
 type server struct {
-	db *pgxpool.Pool
+	db     *pgxpool.Pool
+	apiKey string
 }
 
 func main() {
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
 		log.Fatal("DATABASE_URL environment variable is required")
+	}
+
+	// API_KEY is an external third-party credential the app needs to start —
+	// it cannot be provisioned locally and must be supplied as a secret.
+	apiKey := os.Getenv("API_KEY")
+	if apiKey == "" {
+		log.Fatal("API_KEY environment variable is required")
 	}
 
 	port := os.Getenv("PORT")
@@ -47,7 +55,7 @@ func main() {
 		log.Fatalf("failed to initialize schema: %v", err)
 	}
 
-	s := &server{db: pool}
+	s := &server{db: pool, apiKey: apiKey}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", s.handleHealth)

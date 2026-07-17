@@ -37,3 +37,7 @@ curl localhost:8080/health
 curl localhost:8080/notes
 curl -X POST localhost:8080/notes -d '{"owner":"carol","body":"hi"}'
 ```
+
+## Required secret
+
+`API_KEY` is a required external third-party credential — the service refuses to start without it, and it cannot be provisioned locally. Supply it as a secret at setup.
