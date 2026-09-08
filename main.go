@@ -284,6 +284,12 @@ func (s *server) handleListNotes(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, notes)
 }
 
+// noteNotFound is the single response used both when a note does not exist and
+// when it belongs to someone else, so a caller cannot tell the two apart.
+func noteNotFound(w http.ResponseWriter) {
+	writeJSON(w, http.StatusNotFound, map[string]string{"error": "note not found"})
+}
+
 func (s *server) handleGetNote(w http.ResponseWriter, r *http.Request) {
 	user, err := s.authenticate(r)
 	if err != nil {
@@ -297,10 +303,9 @@ func (s *server) handleGetNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var n Note
-	err = s.db.QueryRow(r.Context(), "SELECT id, owner_id, body FROM notes WHERE id = $1", id).Scan(&n.ID, &n.OwnerID, &n.Body)
+	n, err := s.noteByID(r, id)
 	if errors.Is(err, pgx.ErrNoRows) {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "note not found"})
+		noteNotFound(w)
 		return
 	}
 	if err != nil {
@@ -308,11 +313,17 @@ func (s *server) handleGetNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if n.OwnerID != user.ID {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "note not found"})
+		noteNotFound(w)
 		return
 	}
 
 	writeJSON(w, http.StatusOK, n)
+}
+
+func (s *server) noteByID(r *http.Request, id int) (Note, error) {
+	var n Note
+	err := s.db.QueryRow(r.Context(), "SELECT id, owner_id, body FROM notes WHERE id = $1", id).Scan(&n.ID, &n.OwnerID, &n.Body)
+	return n, err
 }
 
 type createNoteRequest struct {
