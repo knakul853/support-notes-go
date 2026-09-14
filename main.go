@@ -146,7 +146,7 @@ func (s *server) handleGetNote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var n Note
-	err = s.db.QueryRow(r.Context(), "SELECT id, owner, body FROM notes WHERE id = $1", id).Scan(&n.ID, &n.Owner, &n.Body)
+	err = s.db.QueryRow(r.Context(), "SELECT id, owner, body FROM notes WHERE id = $1", id).Scan(&n.ID, &n.Owner)
 	if errors.Is(err, pgx.ErrNoRows) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "note not found"})
 		return
